@@ -16,6 +16,7 @@ from app.schemas.auth import (
 )
 from app.services import auth_tokens
 from app.services.otp import generate_code, store_otp, verify_otp
+from app.services.users_bootstrap import ensure_referral_code, ensure_user_wallet
 
 router = APIRouter()
 
@@ -43,6 +44,11 @@ def verify(req: VerifyOtpRequest, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
+
+    # Bootstrap user infra (wallet, referral code)
+    ensure_user_wallet(db, user.id)
+    ensure_referral_code(db, user)
+    db.commit()
 
     pair = auth_tokens.issue_tokens(str(user.id))
     return TokenResponse(access_token=pair.access_token, refresh_token=pair.refresh_token)
