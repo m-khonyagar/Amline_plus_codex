@@ -64,3 +64,39 @@ def enqueue_dlq(*, notification_id: uuid.UUID, reason: str, attempt: int) -> str
         "ts_ms": str(now_ms()),
     }
     return r.xadd(DLQ_STREAM_KEY, payload)
+
+
+def read_dlq(*, count: int = 50) -> list[tuple[str, dict]]:
+    """Read newest DLQ entries first."""
+    r = get_redis()
+    items = r.xrevrange(DLQ_STREAM_KEY, max="+", min="-", count=int(count))
+    return [(msg_id, fields) for msg_id, fields in items]
+
+
+def replay_dlq(*, notification_id: uuid.UUID | None = None, count: int = 200) -> int:
+    """Re-enqueue DLQ messages back to the main stream and delete from DLQ.
+
+    If notification_id is provided, only matching DLQ messages are replayed.
+    """
+    r = get_redis()
+    items = r.xrevrange(DLQ_STREAM_KEY, max="+", min="-", count=int(count))
+
+    replayed = 0
+    for msg_id, fields in items:
+        nid = fields.get("notification_id")
+        try:
+            nid_uuid = uuid.UUID(nid)
+        except Exception:
+            # Drop malformed entries.
+            r.xdel(DLQ_STREAM_KEY, msg_id)
+            continue
+
+        if notification_id is not None and nid_uuid != notification_id:
+            continue
+
+        attempt = int(fields.get("attempt") or 0)
+        enqueue_notification(notification_id=nid_uuid, attempt=attempt)
+        r.xdel(DLQ_STREAM_KEY, msg_id)
+        replayed += 1
+
+    return replayed
