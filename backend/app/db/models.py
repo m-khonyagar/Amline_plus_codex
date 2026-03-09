@@ -16,5 +16,4 @@ from app.models.campaign import Campaign  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
 from app.models.arbitration import Arbitration  # noqa: F401
-from app.models.tenant_score_event import TenantScoreEvent  # noqa: F401
-
+from app.models.tenant_score_event import TenantScoreEvent  # noqa: F401\nfrom app.models.arbitration_message import ArbitrationMessage  # noqa: F401\nfrom app.models.arbitration_attachment import ArbitrationAttachment  # noqa: F401\n
