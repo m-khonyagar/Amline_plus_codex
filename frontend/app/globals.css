@@ -428,3 +428,37 @@ textarea {
     bottom: 0;
   }
 }
+/* Wizard */
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.step {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.step.active {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(61, 214, 208, 0.32);
+  background: linear-gradient(180deg, rgba(61, 214, 208, 0.18), rgba(255, 255, 255, 0.06));
+}
+
+.step.done {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: rgba(248, 214, 106, 0.30);
+  background: linear-gradient(180deg, rgba(248, 214, 106, 0.14), rgba(255, 255, 255, 0.05));
+}
+
+@media (max-width: 700px) {
+  .stepper {
+    grid-template-columns: 1fr 1fr;
+  }
+}

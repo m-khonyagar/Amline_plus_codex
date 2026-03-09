@@ -144,10 +144,7 @@ export default function ContractsPage() {
           <h1 className="pageTitle">قراردادها</h1>
           <p className="pageSub">ساخت قرارداد با انتخاب ملک از لیست و جستجوی مستاجر با موبایل.</p>
         </div>
-        <div className="row">
-          <a className="btn" href="/app/properties">
-            ثبت ملک
-          </a>
+        <div className="row">\n          <a className="btn btnPrimary" href="/app/contracts/new">قرارداد جدید</a>\n          <a className="btn" href="/app/properties">ثبت ملک</a>
           <button className="btn" onClick={load} disabled={busy}>
             بازخوانی
           </button>
@@ -268,3 +265,4 @@ export default function ContractsPage() {
     </div>
   );
 }
+
