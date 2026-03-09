@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../lib/api";
 
 type ArbitrationOut = {
@@ -16,6 +16,15 @@ type ArbitrationOut = {
   resolver_id?: string | null;
   resolution?: string | null;
 };
+
+function fmt(ts?: string | null) {
+  if (!ts) return "-";
+  try {
+    return new Date(ts).toLocaleString("fa-IR");
+  } catch {
+    return ts;
+  }
+}
 
 export default function ArbitrationsPage() {
   const [items, setItems] = useState<ArbitrationOut[]>([]);
@@ -77,7 +86,7 @@ export default function ArbitrationsPage() {
               </button>
             </div>
           </div>
-          <p className="subtitle">MVP صفحه داوری: لیست، ایجاد پرونده، و ورود به جزئیات.</p>
+          <p className="subtitle">لیست پرونده‌ها + ایجاد پرونده جدید.</p>
         </div>
 
         {err ? (
@@ -122,13 +131,11 @@ export default function ArbitrationsPage() {
           <section className="card" style={{ padding: 14, boxShadow: "none", marginTop: 14 }}>
             <div className="badge">Recent</div>
             {items.length === 0 ? (
-              <div className="subtitle" style={{ marginTop: 10 }}>
-                خالی
-              </div>
+              <div className="subtitle" style={{ marginTop: 10 }}>خالی</div>
             ) : (
-              items.slice(0, 25).map((a) => (
+              items.slice(0, 30).map((a) => (
                 <a key={a.id} href={`/app/arbitrations/${a.id}`} className="kv">
-                  <div className="k">{a.status}</div>
+                  <div className="k">{a.status} | {fmt(a.created_at)}</div>
                   <div className="v">{a.reason} | {a.id}</div>
                 </a>
               ))

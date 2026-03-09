@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch, getTokens } from "../../../lib/api";
 
 type ArbitrationOut = {
@@ -35,8 +35,20 @@ type AttachmentOut = {
   created_at: string;
 };
 
+type Presign = { url: string; expires_in_seconds: number };
+
+function fmt(ts?: string | null) {
+  if (!ts) return "-";
+  try {
+    return new Date(ts).toLocaleString("fa-IR");
+  } catch {
+    return ts;
+  }
+}
+
 export default function ArbitrationDetail({ params }: { params: { id: string } }) {
   const id = params.id;
+
   const [arb, setArb] = useState<ArbitrationOut | null>(null);
   const [msgs, setMsgs] = useState<MessageOut[]>([]);
   const [atts, setAtts] = useState<AttachmentOut[]>([]);
@@ -48,6 +60,8 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
   const [resolution, setResolution] = useState("");
 
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const closed = arb?.status === "resolved" || arb?.status === "rejected";
 
   async function load() {
     setErr(null);
@@ -116,6 +130,21 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
     }
   }
 
+  async function download(att: AttachmentOut) {
+    setBusy(true);
+    setErr(null);
+    try {
+      // Prefer S3 presign if available.
+      const p = await apiFetch<Presign>(`/arbitrations/${id}/attachments/${att.id}/presign`);
+      window.open(p.url, "_blank", "noopener,noreferrer");
+    } catch {
+      // Fall back to local download endpoint.
+      window.open(`/api/arbitrations/${id}/attachments/${att.id}/download`, "_blank", "noopener,noreferrer");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function changeStatus() {
     setBusy(true);
     setErr(null);
@@ -140,8 +169,12 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
           <div className="row" style={{ justifyContent: "space-between" }}>
             <h1 className="title">Arbitration</h1>
             <div className="row">
-              <a className="btn" href="/app/arbitrations">لیست</a>
-              <button className="btn" onClick={load} disabled={busy}>Refresh</button>
+              <a className="btn" href="/app/arbitrations">
+                لیست
+              </a>
+              <button className="btn" onClick={load} disabled={busy}>
+                Refresh
+              </button>
             </div>
           </div>
           <p className="subtitle">جزئیات پرونده + پیام‌ها + پیوست‌ها.</p>
@@ -162,6 +195,10 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
           <div className="v">{arb?.reason || "..."}</div>
         </div>
         <div className="kv">
+          <div className="k">created_at</div>
+          <div className="v">{fmt(arb?.created_at)}</div>
+        </div>
+        <div className="kv">
           <div className="k">id</div>
           <div className="v">{arb?.id || "..."}</div>
         </div>
@@ -171,16 +208,24 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
             <section className="card" style={{ padding: 14, boxShadow: "none" }}>
               <div className="badge">Messages</div>
               <div className="row" style={{ marginTop: 10 }}>
-                <input className="input" value={body} onChange={(e) => setBody(e.target.value)} placeholder="پیام..." />
-                <button className="btn btnPrimary" onClick={postMessage} disabled={busy}>ارسال</button>
+                <input
+                  className="input"
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder={closed ? "پرونده بسته است" : "پیام..."}
+                  disabled={busy || closed}
+                />
+                <button className="btn btnPrimary" onClick={postMessage} disabled={busy || closed}>
+                  ارسال
+                </button>
               </div>
               <div style={{ marginTop: 10 }}>
                 {msgs.length === 0 ? (
                   <div className="subtitle">خالی</div>
                 ) : (
-                  msgs.slice(-25).map((m) => (
+                  msgs.slice(-30).map((m) => (
                     <div key={m.id} className="kv">
-                      <div className="k">{m.author_id.slice(0, 8)}</div>
+                      <div className="k">{m.author_id.slice(0, 8)} | {fmt(m.created_at)}</div>
                       <div className="v">{m.body}</div>
                     </div>
                   ))
@@ -191,17 +236,26 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
             <aside className="card" style={{ padding: 14, boxShadow: "none" }}>
               <div className="badge">Attachments</div>
               <div className="row" style={{ marginTop: 10 }}>
-                <input ref={fileRef} className="input" type="file" />
-                <button className="btn" onClick={upload} disabled={busy}>Upload</button>
+                <input ref={fileRef} className="input" type="file" disabled={busy || closed} />
+                <button className="btn" onClick={upload} disabled={busy || closed}>
+                  Upload
+                </button>
               </div>
               <div style={{ marginTop: 10 }}>
                 {atts.length === 0 ? (
                   <div className="subtitle">خالی</div>
                 ) : (
-                  atts.slice(0, 20).map((a) => (
+                  atts.slice(0, 30).map((a) => (
                     <div key={a.id} className="kv">
-                      <div className="k">{Math.round(a.size_bytes / 1024)} KB</div>
-                      <div className="v">{a.filename}</div>
+                      <div className="k">{Math.max(1, Math.round(a.size_bytes / 1024))} KB</div>
+                      <div className="v">
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
+                          <span>{a.filename}</span>
+                          <button className="btn" onClick={() => download(a)} disabled={busy}>
+                            Download
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}
@@ -210,15 +264,21 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
               <div style={{ marginTop: 16 }}>
                 <div className="badge">Status</div>
                 <div className="field" style={{ marginTop: 10 }}>
-                  <div className="label">next status</div>
-                  <input className="input" value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} placeholder="under_review | resolved | rejected" />
+                  <div className="label">next status (staff only)</div>
+                  <select className="input" value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy}>
+                    <option value="under_review">under_review</option>
+                    <option value="resolved">resolved</option>
+                    <option value="rejected">rejected</option>
+                  </select>
                 </div>
                 <div className="field" style={{ marginTop: 10 }}>
                   <div className="label">resolution</div>
-                  <input className="input" value={resolution} onChange={(e) => setResolution(e.target.value)} />
+                  <input className="input" value={resolution} onChange={(e) => setResolution(e.target.value)} disabled={busy} />
                 </div>
                 <div className="row" style={{ marginTop: 10, justifyContent: "flex-end" }}>
-                  <button className="btn" onClick={changeStatus} disabled={busy}>Apply</button>
+                  <button className="btn" onClick={changeStatus} disabled={busy}>
+                    Apply
+                  </button>
                 </div>
               </div>
             </aside>
