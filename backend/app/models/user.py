@@ -23,8 +23,9 @@ class User(UUIDPkMixin, TimestampCreatedMixin, Base):
     mobile: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     national_code: Mapped[str | None] = mapped_column(String(16), nullable=True, index=True)
     name: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.user)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole, values_callable=lambda x: [e.value for e in x]), default=UserRole.user)
     tenant_score: Mapped[int] = mapped_column(Integer, default=0)
     referral_code: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True, index=True)
 
     # For future: KYC timestamps, etc.
+

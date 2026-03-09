@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: amline
+          POSTGRES_PASSWORD: amline
+          POSTGRES_DB: amline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U amline -d amline"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      AMLINE_ENV: dev
+      AMLINE_DATABASE_URL: postgresql+psycopg://amline:amline@localhost:5432/amline
+      AMLINE_REDIS_URL: redis://localhost:6379/0
+      AMLINE_JWT_SECRET: ci-secret
+      AMLINE_JWT_ISSUER: amline
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      - name: Syntax check
+        working-directory: backend
+        run: |
+          python -m py_compile $(find app alembic -name "*.py" -print)
+
+      - name: DB migrate
+        working-directory: backend
+        run: |
+          alembic upgrade head
+
+      - name: Tests
+        working-directory: backend
+        run: |
+          pytest -q
