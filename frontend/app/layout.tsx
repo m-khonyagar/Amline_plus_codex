@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Vazirmatn, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const space = Space_Grotesk({ subsets: ["latin"], variable: "--font-space" });
+const sans = Vazirmatn({ subsets: ["arabic"], variable: "--font-sans" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "600"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "Amline",
-  description: "Amline PropTech platform"
+  title: "املاین",
+  description: "زیرساخت دیجیتال املاک و قرارداد"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fa" dir="rtl" className={`${space.variable} ${mono.variable}`}>
-      <body style={{ fontFamily: "var(--font-space), system-ui" }}>{children}</body>
+    <html lang="fa" dir="rtl" className={`${sans.variable} ${mono.variable}`}>
+      <body style={{ fontFamily: "var(--font-sans), system-ui" }}>{children}</body>
     </html>
   );
 }

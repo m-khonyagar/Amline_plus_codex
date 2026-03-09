@@ -76,28 +76,36 @@ export default function NotificationsPage() {
       <div className="card">
         <div className="header">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">Notifications</h1>
+            <h1 className="title">اعلان‌ها</h1>
             <div className="row">
-              <a className="btn" href="/app">داشبورد</a>
+              <a className="btn" href="/app">
+                داشبورد
+              </a>
               <button className="btn btnPrimary" onClick={enqueue} disabled={busy}>
-                {busy ? "..." : "Dev Enqueue"}
+                {busy ? "..." : "ارسال تست (dev)"}
               </button>
               <button className="btn" onClick={replayAllDlq} disabled={busy}>
-                Replay DLQ
+                بازپخش DLQ
               </button>
             </div>
           </div>
-          <p className="subtitle">لیست نوتیفیکیشن‌ها و DLQ (dev-only).</p>
+          <p className="subtitle">لیست اعلان‌ها و صف خطا (DLQ) برای محیط توسعه.</p>
         </div>
 
-        {err ? <div style={{ padding: "0 26px 18px 26px" }}><div className="notice error">{err}</div></div> : null}
+        {err ? (
+          <div style={{ padding: "0 26px 18px 26px" }}>
+            <div className="notice error">{err}</div>
+          </div>
+        ) : null}
 
         <div style={{ padding: "0 26px 26px 26px" }}>
           <div className="grid">
             <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">Recent</div>
+              <div className="badge">آخرین اعلان‌ها</div>
               {items.length === 0 ? (
-                <div className="subtitle" style={{ marginTop: 10 }}>خالی</div>
+                <div className="subtitle" style={{ marginTop: 10 }}>
+                  خالی
+                </div>
               ) : (
                 items.slice(0, 12).map((n) => (
                   <div key={n.id} className="kv">
@@ -109,13 +117,15 @@ export default function NotificationsPage() {
             </section>
 
             <aside className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">DLQ</div>
+              <div className="badge">صف خطا (DLQ)</div>
               {dlq.length === 0 ? (
-                <div className="subtitle" style={{ marginTop: 10 }}>خالی</div>
+                <div className="subtitle" style={{ marginTop: 10 }}>
+                  خالی
+                </div>
               ) : (
                 dlq.slice(0, 12).map((d) => (
                   <div key={d.id} className="kv">
-                    <div className="k">attempt {d.attempt}</div>
+                    <div className="k">تلاش {d.attempt}</div>
                     <div className="v">{d.reason || "-"}</div>
                   </div>
                 ))

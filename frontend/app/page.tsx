@@ -72,11 +72,11 @@ export default function Page() {
       <div className="card">
         <div className="header">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">Amline</h1>
-            <span className="badge">API: {base}</span>
+            <h1 className="title">املاین</h1>
+            <span className="badge">آدرس API: {base}</span>
           </div>
           <p className="subtitle">
-            ورود با OTP برای تست MVP. منطق اصلی در بک‌اند است و این UI فقط برای راه‌اندازی سریع تیمی است.
+            ورود با OTP برای اجرای MVP. منطق اصلی در بک‌اند است و این رابط فقط برای تست سریع تیمی و صحت‌سنجی سرویس‌هاست.
           </p>
           {loggedIn ? (
             <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
@@ -90,7 +90,7 @@ export default function Page() {
                 خروج
               </button>
               <a className="btn btnPrimary" href="/app">
-                رفتن به داشبورد
+                ورود به داشبورد
               </a>
             </div>
           ) : null}
@@ -105,7 +105,14 @@ export default function Page() {
                 <>
                   <div className="field" style={{ marginTop: 10 }}>
                     <div className="label">شماره موبایل</div>
-                    <input className="input" value={mobile} onChange={(e) => setMobile(e.target.value)} placeholder="مثلا 09123456789" />
+                    <input
+                      className="input"
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                      placeholder="مثلا 09123456789"
+                      inputMode="tel"
+                      autoComplete="tel"
+                    />
                   </div>
 
                   <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
@@ -118,12 +125,19 @@ export default function Page() {
                 <>
                   <div className="field" style={{ marginTop: 10 }}>
                     <div className="label">کد تایید</div>
-                    <input className="input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="۶ رقم" />
+                    <input
+                      className="input"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="۶ رقم"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                    />
                   </div>
 
                   {devCode ? (
                     <div className="notice" style={{ marginTop: 12 }}>
-                      dev_code: <span style={{ fontFamily: "var(--font-mono), ui-monospace" }}>{devCode}</span>
+                      کد توسعه (dev): <span style={{ fontFamily: "var(--font-mono), ui-monospace" }}>{devCode}</span>
                     </div>
                   ) : null}
 
@@ -140,22 +154,22 @@ export default function Page() {
             </section>
 
             <aside className="card" style={{ padding: 18, boxShadow: "none" }}>
-              <div className="badge">پیشنهاد حرفه‌ای</div>
+              <div className="badge">وضعیت سامانه (MVP)</div>
               <div className="kv">
                 <div className="k">محیط</div>
                 <div className="v">dev</div>
               </div>
               <div className="kv">
-                <div className="k">Notifications</div>
+                <div className="k">اعلان‌ها</div>
                 <div className="v">Redis Streams + Worker + DLQ</div>
               </div>
               <div className="kv">
-                <div className="k">Contracts</div>
+                <div className="k">قرارداد</div>
                 <div className="v">UUID + Alembic</div>
               </div>
               <div className="kv">
-                <div className="k">Next Step</div>
-                <div className="v">Admin Panel + RBAC</div>
+                <div className="k">قدم بعدی</div>
+                <div className="v">پنل ادمین + RBAC</div>
               </div>
             </aside>
           </div>

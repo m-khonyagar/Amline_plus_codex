@@ -65,6 +65,10 @@ function fmt(ts?: string | null) {
   }
 }
 
+function kb(n: number) {
+  return Math.max(1, Math.round(n / 1024));
+}
+
 export default function ArbitrationDetail({ params }: { params: { id: string } }) {
   const id = params.id;
 
@@ -159,11 +163,9 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
     setBusy(true);
     setErr(null);
     try {
-      // Prefer S3 presign if available.
       const p = await apiFetch<Presign>(`/arbitrations/${id}/attachments/${att.id}/presign`);
       window.open(p.url, "_blank", "noopener,noreferrer");
     } catch {
-      // Fall back to local download endpoint.
       window.open(`/api/arbitrations/${id}/attachments/${att.id}/download`, "_blank", "noopener,noreferrer");
     } finally {
       setBusy(false);
@@ -192,17 +194,17 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
       <div className="card">
         <div className="header">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">Arbitration</h1>
+            <h1 className="title">پرونده داوری</h1>
             <div className="row">
               <a className="btn" href="/app/arbitrations">
-                لیست
+                بازگشت به لیست
               </a>
               <button className="btn" onClick={load} disabled={busy}>
-                Refresh
+                بازخوانی
               </button>
             </div>
           </div>
-          <p className="subtitle">جزئیات پرونده + پیام‌ها + پیوست‌ها.</p>
+          <p className="subtitle">جزئیات پرونده، پیام‌ها و پیوست‌ها.</p>
         </div>
 
         {err ? (
@@ -212,49 +214,49 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
         ) : null}
 
         <div className="kv">
-          <div className="k">tracking_code</div>
+          <div className="k">کد رهگیری قرارداد</div>
           <div className="v">{summary?.contract_tracking_code || "-"}</div>
         </div>
         <div className="kv">
-          <div className="k">property_city</div>
+          <div className="k">شهر</div>
           <div className="v">{summary?.property_city || "-"}</div>
         </div>
         <div className="kv">
-          <div className="k">claimant_mobile</div>
+          <div className="k">موبایل شاکی</div>
           <div className="v">{summary?.claimant_mobile || "-"}</div>
         </div>
         <div className="kv">
-          <div className="k">respondent_mobile</div>
+          <div className="k">موبایل طرف مقابل</div>
           <div className="v">{summary?.respondent_mobile || "-"}</div>
         </div>
 
         <div className="kv">
-          <div className="k">status</div>
+          <div className="k">وضعیت</div>
           <div className="v">{arb?.status || "..."}</div>
         </div>
         <div className="kv">
-          <div className="k">reason</div>
+          <div className="k">موضوع</div>
           <div className="v">{arb?.reason || "..."}</div>
         </div>
         <div className="kv">
-          <div className="k">created_at</div>
+          <div className="k">تاریخ ایجاد</div>
           <div className="v">{fmt(arb?.created_at)}</div>
         </div>
         <div className="kv">
-          <div className="k">id</div>
+          <div className="k">شناسه پرونده</div>
           <div className="v">{arb?.id || "..."}</div>
         </div>
 
         <div style={{ padding: "0 26px 26px 26px" }}>
           <div className="grid">
             <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">Messages</div>
+              <div className="badge">پیام‌ها</div>
               <div className="row" style={{ marginTop: 10 }}>
                 <input
                   className="input"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder={closed ? "پرونده بسته است" : "پیام..."}
+                  placeholder={closed ? "پرونده بسته است" : "پیام جدید..."}
                   disabled={busy || closed}
                 />
                 <button className="btn btnPrimary" onClick={postMessage} disabled={busy || closed}>
@@ -267,9 +269,7 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
                 ) : (
                   msgs.slice(-30).map((m) => (
                     <div key={m.id} className="kv">
-                      <div className="k">
-                        {m.author_id.slice(0, 8)} | {fmt(m.created_at)}
-                      </div>
+                      <div className="k">{m.author_id.slice(0, 8)} | {fmt(m.created_at)}</div>
                       <div className="v">{m.body}</div>
                     </div>
                   ))
@@ -278,11 +278,11 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
             </section>
 
             <aside className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">Attachments</div>
+              <div className="badge">پیوست‌ها</div>
               <div className="row" style={{ marginTop: 10 }}>
                 <input ref={fileRef} className="input" type="file" disabled={busy || closed} />
                 <button className="btn" onClick={upload} disabled={busy || closed}>
-                  Upload
+                  آپلود
                 </button>
               </div>
               <div style={{ marginTop: 10 }}>
@@ -291,12 +291,12 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
                 ) : (
                   atts.slice(0, 30).map((a) => (
                     <div key={a.id} className="kv">
-                      <div className="k">{Math.max(1, Math.round(a.size_bytes / 1024))} KB</div>
+                      <div className="k">{kb(a.size_bytes)} KB</div>
                       <div className="v">
                         <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
                           <span>{a.filename}</span>
                           <button className="btn" onClick={() => download(a)} disabled={busy}>
-                            Download
+                            دانلود
                           </button>
                         </div>
                       </div>
@@ -306,22 +306,22 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
               </div>
 
               <div style={{ marginTop: 16 }}>
-                <div className="badge">Status</div>
+                <div className="badge">تغییر وضعیت (فقط staff)</div>
                 <div className="field" style={{ marginTop: 10 }}>
-                  <div className="label">next status (staff only)</div>
+                  <div className="label">وضعیت جدید</div>
                   <select className="input" value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy}>
-                    <option value="under_review">under_review</option>
-                    <option value="resolved">resolved</option>
-                    <option value="rejected">rejected</option>
+                    <option value="under_review">در حال بررسی</option>
+                    <option value="resolved">مختومه</option>
+                    <option value="rejected">رد شده</option>
                   </select>
                 </div>
                 <div className="field" style={{ marginTop: 10 }}>
-                  <div className="label">resolution</div>
+                  <div className="label">شرح نتیجه (اختیاری)</div>
                   <input className="input" value={resolution} onChange={(e) => setResolution(e.target.value)} disabled={busy} />
                 </div>
                 <div className="row" style={{ marginTop: 10, justifyContent: "flex-end" }}>
                   <button className="btn" onClick={changeStatus} disabled={busy}>
-                    Apply
+                    اعمال
                   </button>
                 </div>
               </div>

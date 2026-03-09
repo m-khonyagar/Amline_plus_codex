@@ -12,14 +12,6 @@ type Me = {
 
 type Balance = { user_id: string; balance: number };
 
-type DlqEntry = {
-  id: string;
-  notification_id: string;
-  reason?: string | null;
-  attempt: number;
-  ts_ms?: number | null;
-};
-
 export default function AppHome() {
   const [me, setMe] = useState<Me | null>(null);
   const [bal, setBal] = useState<Balance | null>(null);
@@ -46,13 +38,16 @@ export default function AppHome() {
             <h1 className="title">داشبورد</h1>
             <div className="row">
               <a className="btn" href="/app/notifications">
-                Notifications
+                اعلان‌ها
               </a>
               <a className="btn" href="/app/arbitrations">
-                Arbitrations
+                داوری
               </a>
               <a className="btn" href="/app/analytics">
-                Analytics
+                تحلیل‌ها
+              </a>
+              <a className="btn" href="/app/admin">
+                ادمین
               </a>
               <button
                 className="btn"
@@ -65,7 +60,7 @@ export default function AppHome() {
               </button>
             </div>
           </div>
-          <p className="subtitle">نمای MVP برای بررسی سریع سرویس‌ها.</p>
+          <p className="subtitle">نمای مدیریتی MVP برای بررسی سریع سرویس‌ها و مسیرهای اصلی محصول.</p>
         </div>
 
         {err ? (
@@ -79,15 +74,14 @@ export default function AppHome() {
           <div className="v">{me ? `${me.mobile} (${me.role})` : "..."}</div>
         </div>
         <div className="kv">
-          <div className="k">Wallet</div>
+          <div className="k">کیف پول</div>
           <div className="v">{bal ? bal.balance : "..."}</div>
         </div>
         <div className="kv">
-          <div className="k">Referral Code</div>
+          <div className="k">کد معرفی</div>
           <div className="v">{me?.referral_code || "-"}</div>
         </div>
       </div>
     </main>
   );
 }
-

@@ -54,9 +54,14 @@ function fmt(ts?: string | null) {
   }
 }
 
-function n(v?: number | null) {
+function money(v?: number | null) {
   if (v === null || v === undefined) return "-";
-  // Keep it simple: plain formatting; we can add IRR formatting later.
+  const rounded = Math.round(v);
+  return `${new Intl.NumberFormat("fa-IR").format(rounded)} تومان`;
+}
+
+function num(v?: number | null) {
+  if (v === null || v === undefined) return "-";
   return new Intl.NumberFormat("fa-IR").format(v);
 }
 
@@ -142,7 +147,6 @@ export default function AnalyticsPage() {
   }
 
   useEffect(() => {
-    // Load initial summary once.
     loadSummary();
   }, []);
 
@@ -151,17 +155,20 @@ export default function AnalyticsPage() {
       <div className="card">
         <div className="header">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">Analytics</h1>
+            <h1 className="title">تحلیل‌ها</h1>
             <div className="row">
               <a className="btn" href="/app">
                 داشبورد
               </a>
               <button className="btn" onClick={loadSummary} disabled={busy}>
-                Refresh
+                بازخوانی
               </button>
             </div>
           </div>
-          <p className="subtitle">خلاصه بازار اجاره + تخمین اجاره + عملکرد ملک (MVP).</p>
+          <p className="subtitle">
+            خروجی‌ها در این صفحه بر اساس داده‌های قراردادهای ثبت‌شده در سیستم محاسبه می‌شود. اگر دیتابیس خالی باشد، تخمین‌ها حالت
+            fallback خواهند داشت.
+          </p>
         </div>
 
         {err ? (
@@ -173,30 +180,36 @@ export default function AnalyticsPage() {
         <div style={{ padding: "0 26px 26px 26px" }}>
           <div className="grid">
             <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">Market Rent Summary</div>
+              <div className="badge">خلاصه بازار اجاره</div>
               <div className="grid" style={{ marginTop: 12 }}>
                 <div>
                   <div className="field">
-                    <div className="label">city</div>
+                    <div className="label">شهر</div>
                     <input className="input" value={city} onChange={(e) => setCity(e.target.value)} disabled={busy} />
                   </div>
                   <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">property_type</div>
-                    <input className="input" value={propertyType} onChange={(e) => setPropertyType(e.target.value)} disabled={busy} />
+                    <div className="label">نوع ملک (اختیاری)</div>
+                    <input
+                      className="input"
+                      value={propertyType}
+                      onChange={(e) => setPropertyType(e.target.value)}
+                      disabled={busy}
+                      placeholder="apartment"
+                    />
                   </div>
                 </div>
                 <div>
                   <div className="field">
-                    <div className="label">rooms</div>
-                    <input className="input" value={rooms} onChange={(e) => setRooms(e.target.value)} disabled={busy} />
+                    <div className="label">تعداد اتاق (اختیاری)</div>
+                    <input className="input" value={rooms} onChange={(e) => setRooms(e.target.value)} disabled={busy} placeholder="2" />
                   </div>
                   <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">area (sqm)</div>
-                    <input className="input" value={area} onChange={(e) => setArea(e.target.value)} disabled={busy} />
+                    <div className="label">متراژ (متر مربع، اختیاری)</div>
+                    <input className="input" value={area} onChange={(e) => setArea(e.target.value)} disabled={busy} placeholder="85" />
                   </div>
                   <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
                     <button className="btn btnPrimary" onClick={loadSummary} disabled={busy}>
-                      {busy ? "..." : "Load"}
+                      {busy ? "..." : "محاسبه"}
                     </button>
                   </div>
                 </div>
@@ -204,57 +217,57 @@ export default function AnalyticsPage() {
 
               <div style={{ marginTop: 12 }}>
                 <div className="kv">
-                  <div className="k">sample_size</div>
-                  <div className="v">{summary ? summary.sample_size : "..."}</div>
+                  <div className="k">تعداد نمونه</div>
+                  <div className="v">{summary ? num(summary.sample_size) : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">median_rent_amount</div>
-                  <div className="v">{summary ? n(summary.median_rent_amount) : "..."}</div>
+                  <div className="k">میانه اجاره</div>
+                  <div className="v">{summary ? money(summary.median_rent_amount) : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">p25 / p75</div>
-                  <div className="v">{summary ? `${n(summary.p25_rent_amount)} / ${n(summary.p75_rent_amount)}` : "..."}</div>
+                  <div className="k">چارک ۲۵ / ۷۵</div>
+                  <div className="v">{summary ? `${money(summary.p25_rent_amount)} / ${money(summary.p75_rent_amount)}` : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">median_rent_per_sqm</div>
-                  <div className="v">{summary ? n(summary.median_rent_per_sqm) : "..."}</div>
+                  <div className="k">میانه اجاره به ازای هر متر</div>
+                  <div className="v">{summary ? `${money(summary.median_rent_per_sqm)} / متر` : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">last_contract_created_at</div>
+                  <div className="k">آخرین قرارداد</div>
                   <div className="v">{summary ? fmt(summary.last_contract_created_at) : "..."}</div>
                 </div>
               </div>
             </section>
 
             <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">Rent Estimate</div>
+              <div className="badge">تخمین اجاره</div>
               <div className="grid" style={{ marginTop: 12 }}>
                 <div>
                   <div className="field">
-                    <div className="label">city</div>
+                    <div className="label">شهر</div>
                     <input className="input" value={eCity} onChange={(e) => setECity(e.target.value)} disabled={busy} />
                   </div>
                   <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">property_type</div>
+                    <div className="label">نوع ملک</div>
                     <input className="input" value={ePropertyType} onChange={(e) => setEPropertyType(e.target.value)} disabled={busy} />
                   </div>
                   <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">year_built</div>
+                    <div className="label">سال ساخت (شمسی، اختیاری)</div>
                     <input className="input" value={eYearBuilt} onChange={(e) => setEYearBuilt(e.target.value)} disabled={busy} />
                   </div>
                 </div>
                 <div>
                   <div className="field">
-                    <div className="label">rooms</div>
+                    <div className="label">اتاق</div>
                     <input className="input" value={eRooms} onChange={(e) => setERooms(e.target.value)} disabled={busy} />
                   </div>
                   <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">area (sqm)</div>
+                    <div className="label">متراژ (متر مربع)</div>
                     <input className="input" value={eArea} onChange={(e) => setEArea(e.target.value)} disabled={busy} />
                   </div>
                   <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
                     <button className="btn btnPrimary" onClick={runEstimate} disabled={busy}>
-                      {busy ? "..." : "Estimate"}
+                      {busy ? "..." : "تخمین"}
                     </button>
                   </div>
                 </div>
@@ -262,30 +275,30 @@ export default function AnalyticsPage() {
 
               <div style={{ marginTop: 12 }}>
                 <div className="kv">
-                  <div className="k">estimate</div>
-                  <div className="v">{estimate ? n(estimate.estimate_rent_amount) : "..."}</div>
+                  <div className="k">تخمین</div>
+                  <div className="v">{estimate ? money(estimate.estimate_rent_amount) : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">low / high</div>
-                  <div className="v">{estimate ? `${n(estimate.low_rent_amount)} / ${n(estimate.high_rent_amount)}` : "..."}</div>
+                  <div className="k">بازه پیشنهادی</div>
+                  <div className="v">{estimate ? `${money(estimate.low_rent_amount)} تا ${money(estimate.high_rent_amount)}` : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">confidence</div>
-                  <div className="v">{estimate ? estimate.confidence : "..."}</div>
+                  <div className="k">اعتماد</div>
+                  <div className="v">{estimate ? new Intl.NumberFormat("fa-IR").format(estimate.confidence) : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">sample_size</div>
-                  <div className="v">{estimate ? estimate.sample_size : "..."}</div>
+                  <div className="k">تعداد نمونه</div>
+                  <div className="v">{estimate ? num(estimate.sample_size) : "..."}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">method</div>
+                  <div className="k">روش</div>
                   <div className="v">{estimate ? estimate.method : "..."}</div>
                 </div>
               </div>
             </section>
 
             <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">Property Performance (Owner/Staff)</div>
+              <div className="badge">عملکرد ملک (مالک یا نقش staff)</div>
               <div className="row" style={{ marginTop: 12 }}>
                 <input
                   className="input"
@@ -295,25 +308,25 @@ export default function AnalyticsPage() {
                   disabled={busy}
                 />
                 <button className="btn btnPrimary" onClick={loadPerf} disabled={busy || !propertyId.trim()}>
-                  Load
+                  بارگذاری
                 </button>
               </div>
 
               <div style={{ marginTop: 12 }}>
                 <div className="kv">
-                  <div className="k">total_contracts</div>
-                  <div className="v">{perf ? perf.total_contracts : "-"}</div>
+                  <div className="k">تعداد قرارداد</div>
+                  <div className="v">{perf ? num(perf.total_contracts) : "-"}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">active_contracts</div>
-                  <div className="v">{perf ? perf.active_contracts : "-"}</div>
+                  <div className="k">قرارداد فعال</div>
+                  <div className="v">{perf ? num(perf.active_contracts) : "-"}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">total_rent_collected</div>
-                  <div className="v">{perf ? n(perf.total_rent_collected) : "-"}</div>
+                  <div className="k">مجموع اجاره وصول‌شده</div>
+                  <div className="v">{perf ? money(perf.total_rent_collected) : "-"}</div>
                 </div>
                 <div className="kv">
-                  <div className="k">last_rent_payment_at</div>
+                  <div className="k">آخرین پرداخت</div>
                   <div className="v">{perf ? fmt(perf.last_rent_payment_at) : "-"}</div>
                 </div>
               </div>
@@ -324,4 +337,3 @@ export default function AnalyticsPage() {
     </main>
   );
 }
-

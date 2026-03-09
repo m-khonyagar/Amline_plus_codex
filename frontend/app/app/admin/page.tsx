@@ -56,35 +56,45 @@ export default function AdminPage() {
       <div className="card">
         <div className="header">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">Admin</h1>
+            <h1 className="title">ادمین</h1>
             <div className="row">
-              <a className="btn" href="/app">داشبورد</a>
-              <a className="btn" href="/app/notifications">Notifications</a>
+              <a className="btn" href="/app">
+                داشبورد
+              </a>
+              <a className="btn" href="/app/notifications">
+                اعلان‌ها
+              </a>
               <button className="btn" onClick={replayAll} disabled={busy}>
-                Replay DLQ
+                بازپخش DLQ
               </button>
             </div>
           </div>
           <p className="subtitle">
-            این صفحه نیاز به نقش Admin/Moderator دارد. برای dev می‌توانید `AMLINE_BOOTSTRAP_ADMIN_MOBILE` را در compose تنظیم کنید.
+            این صفحه نیاز به نقش Admin/Moderator دارد. برای محیط توسعه می‌توانید `AMLINE_BOOTSTRAP_ADMIN_MOBILE` را در compose تنظیم کنید.
           </p>
         </div>
 
-        {err ? <div style={{ padding: "0 26px 18px 26px" }}><div className="notice error">{err}</div></div> : null}
+        {err ? (
+          <div style={{ padding: "0 26px 18px 26px" }}>
+            <div className="notice error">{err}</div>
+          </div>
+        ) : null}
 
         <div className="kv">
-          <div className="k">Me</div>
+          <div className="k">حساب فعلی</div>
           <div className="v">{me ? `${me.mobile} (${me.role})` : "..."}</div>
         </div>
 
         <div style={{ padding: "0 26px 26px 26px" }}>
-          <div className="badge">DLQ</div>
+          <div className="badge">صف خطا (DLQ)</div>
           {dlq.length === 0 ? (
-            <div className="subtitle" style={{ marginTop: 10 }}>خالی</div>
+            <div className="subtitle" style={{ marginTop: 10 }}>
+              خالی
+            </div>
           ) : (
             dlq.slice(0, 25).map((d) => (
               <div key={d.id} className="kv">
-                <div className="k">attempt {d.attempt}</div>
+                <div className="k">تلاش {d.attempt}</div>
                 <div className="v">{d.notification_id} | {d.reason || "-"}</div>
               </div>
             ))
