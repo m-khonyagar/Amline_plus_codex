@@ -28,6 +28,7 @@ services:
       context: ./backend
     environment:
       AMLINE_ENV: dev
+      AMLINE_BOOTSTRAP_ADMIN_MOBILE: ${AMLINE_BOOTSTRAP_ADMIN_MOBILE:-}
       AMLINE_DATABASE_URL: postgresql+psycopg://amline:amline@postgres:5432/amline
       AMLINE_REDIS_URL: redis://redis:6379/0
       AMLINE_JWT_SECRET: dev-secret-change-me
@@ -49,6 +50,7 @@ services:
       context: ./backend
     environment:
       AMLINE_ENV: dev
+      AMLINE_BOOTSTRAP_ADMIN_MOBILE: ${AMLINE_BOOTSTRAP_ADMIN_MOBILE:-}
       AMLINE_DATABASE_URL: postgresql+psycopg://amline:amline@postgres:5432/amline
       AMLINE_REDIS_URL: redis://redis:6379/0
       AMLINE_JWT_SECRET: dev-secret-change-me
