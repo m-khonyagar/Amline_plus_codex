@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -9,6 +12,7 @@ from app.db.session import get_db
 from app.models.contract import Contract
 from app.models.contract_signature import ContractSignature
 from app.models.document import Document
+from app.models.property import Property
 from app.models.user import User
 from app.schemas.document import DocumentOut, PresignResponse
 from app.services.documents import (
@@ -39,6 +43,35 @@ def _can_view(user: User, c: Contract) -> bool:
     return user.id in {c.owner_id, c.tenant_id}
 
 
+def _safe_local(path_str: str | None) -> Path | None:
+    if not path_str:
+        return None
+    try:
+        p = Path(path_str)
+        if not p.exists() or not p.is_file():
+            return None
+        return p
+    except Exception:
+        return None
+
+
+@router.get("/contracts/{contract_id}", response_model=list[DocumentOut])
+def list_contract_documents(contract_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        cid = parse_uuid(contract_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="invalid_contract_id")
+
+    c = db.get(Contract, cid)
+    if not c:
+        raise HTTPException(status_code=404, detail="contract_not_found")
+    if not _can_view(user, c):
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    items = db.query(Document).filter(Document.contract_id == cid).order_by(Document.created_at.desc()).all()
+    return [_to_out(d) for d in items]
+
+
 @router.post("/contracts/{contract_id}/generate", response_model=DocumentOut)
 def generate_for_contract(
     contract_id: str,
@@ -57,30 +90,48 @@ def generate_for_contract(
     if not _can_view(user, c):
         raise HTTPException(status_code=403, detail="forbidden")
 
-    owner_signed = (
+    owner = db.get(User, c.owner_id)
+    tenant = db.get(User, c.tenant_id)
+    prop = db.get(Property, c.property_id)
+
+    sig_owner = (
         db.query(ContractSignature)
         .filter(ContractSignature.contract_id == c.id, ContractSignature.user_id == c.owner_id)
-        .count()
-        > 0
+        .order_by(ContractSignature.signed_at.desc())
+        .first()
     )
-    tenant_signed = (
+    sig_tenant = (
         db.query(ContractSignature)
         .filter(ContractSignature.contract_id == c.id, ContractSignature.user_id == c.tenant_id)
-        .count()
-        > 0
+        .order_by(ContractSignature.signed_at.desc())
+        .first()
     )
 
-    # TODO: expand template context (owner/tenant profiles, property address, etc.)
     ctx = {
-        "owner_name": str(c.owner_id),
-        "tenant_name": str(c.tenant_id),
-        "rent_amount": float(c.rent_amount),
-        "deposit_amount": float(c.deposit_amount),
+        "contract_id": str(c.id),
+        "tracking_code": c.tracking_code,
+        "contract_type": c.contract_type,
         "start_date": str(c.start_date),
         "end_date": str(c.end_date),
-        "tracking_code": c.tracking_code,
-        "owner_signed": "yes" if owner_signed else "no",
-        "tenant_signed": "yes" if tenant_signed else "no",
+        "rent_amount": float(c.rent_amount),
+        "deposit_amount": float(c.deposit_amount),
+        "created_at": c.created_at.isoformat() if c.created_at else "",
+
+        "owner_name": (owner.name if owner and owner.name else (owner.mobile if owner else str(c.owner_id))),
+        "owner_mobile": (owner.mobile if owner else None),
+        "tenant_name": (tenant.name if tenant and tenant.name else (tenant.mobile if tenant else str(c.tenant_id))),
+        "tenant_mobile": (tenant.mobile if tenant else None),
+
+        "property_city": (prop.city if prop else None),
+        "property_address": (prop.address if prop else None),
+        "property_area": float(prop.area) if prop else None,
+        "property_rooms": int(prop.rooms) if prop else None,
+        "property_type": (prop.property_type if prop else None),
+
+        "owner_signed": "بله" if sig_owner else "خیر",
+        "tenant_signed": "بله" if sig_tenant else "خیر",
+        "owner_signed_at": (sig_owner.signed_at.isoformat() if sig_owner else None),
+        "tenant_signed_at": (sig_tenant.signed_at.isoformat() if sig_tenant else None),
     }
 
     html = render_contract_html(ctx)
@@ -167,3 +218,47 @@ def presign_pdf(document_id: str, user: User = Depends(get_current_user), db: Se
 
     url = presign_get_url(key=d.pdf_s3_key, expires_in_seconds=3600)
     return PresignResponse(url=url, expires_in_seconds=3600)
+
+
+@router.get("/{document_id}/download/html")
+def download_html(document_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        did = parse_uuid(document_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="invalid_document_id")
+
+    d = db.get(Document, did)
+    if not d:
+        raise HTTPException(status_code=404, detail="document_not_found")
+
+    c = db.get(Contract, d.contract_id)
+    if not c or not _can_view(user, c):
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    p = _safe_local(d.html_local_path)
+    if not p:
+        raise HTTPException(status_code=404, detail="html_not_available")
+
+    return FileResponse(path=str(p), media_type="text/html")
+
+
+@router.get("/{document_id}/download/pdf")
+def download_pdf(document_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        did = parse_uuid(document_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="invalid_document_id")
+
+    d = db.get(Document, did)
+    if not d:
+        raise HTTPException(status_code=404, detail="document_not_found")
+
+    c = db.get(Contract, d.contract_id)
+    if not c or not _can_view(user, c):
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    p = _safe_local(d.pdf_local_path)
+    if not p:
+        raise HTTPException(status_code=404, detail="pdf_not_available")
+
+    return FileResponse(path=str(p), media_type="application/pdf", filename=f"contract-{c.tracking_code}.pdf")

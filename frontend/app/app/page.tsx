@@ -36,8 +36,7 @@ export default function AppHome() {
         <div className="header">
           <div className="row" style={{ justifyContent: "space-between" }}>
             <h1 className="title">داشبورد</h1>
-            <div className="row">
-              <a className="btn" href="/app/notifications">
+            <div className="row">\n              <a className="btn" href="/app/properties">\n                املاک\n              </a>\n              <a className="btn" href="/app/contracts">\n                قراردادها\n              </a>\n              <a className="btn" href="/app/notifications">
                 اعلان‌ها
               </a>
               <a className="btn" href="/app/arbitrations">
@@ -85,3 +84,4 @@ export default function AppHome() {
     </main>
   );
 }
+
