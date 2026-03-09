@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import "../lib/domPatch";
 import { getTokens } from "../lib/api";
 
 export default function AuthGate({ children }: { children: ReactNode }) {
