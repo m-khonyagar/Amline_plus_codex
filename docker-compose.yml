@@ -39,7 +39,7 @@ services:
       AMLINE_S3_BUCKET: amline-docs
       AMLINE_S3_REGION: us-east-1
     ports:
-      - "${AMLINE_API_PORT:-8000}:8000"
+      - "${AMLINE_API_PORT:-8088}:8000"
     depends_on:
       - postgres
       - redis
@@ -66,10 +66,11 @@ services:
     environment:
       AMLINE_API_INTERNAL_URL: http://backend:8000
     ports:
-      - "${AMLINE_WEB_PORT:-3000}:3000"
+      - "${AMLINE_WEB_PORT:-3088}:3000"
     depends_on:
       - backend
 
 volumes:
   postgres_data:
   minio_data:
+
