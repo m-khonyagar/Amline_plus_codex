@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    analytics,
     arbitration_summary,
     arbitrations,
     auth,
@@ -32,6 +33,7 @@ api_router.include_router(campaigns.router, prefix="/campaigns", tags=["campaign
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(documents.router, prefix="/documents", tags=["documents"])
 api_router.include_router(tenant_score.router, prefix="/tenant-score", tags=["tenant-score"])
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 
 api_router.include_router(arbitrations.router, prefix="/arbitrations", tags=["arbitrations"])
 api_router.include_router(arbitration_summary.router, prefix="/arbitrations", tags=["arbitrations"])

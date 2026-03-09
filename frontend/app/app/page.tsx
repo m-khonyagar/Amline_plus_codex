@@ -47,7 +47,13 @@ export default function AppHome() {
             <div className="row">
               <a className="btn" href="/app/notifications">
                 Notifications
-              </a>\n              <a className="btn" href="/app/arbitrations">Arbitrations</a>
+              </a>
+              <a className="btn" href="/app/arbitrations">
+                Arbitrations
+              </a>
+              <a className="btn" href="/app/analytics">
+                Analytics
+              </a>
               <button
                 className="btn"
                 onClick={() => {
@@ -62,7 +68,11 @@ export default function AppHome() {
           <p className="subtitle">نمای MVP برای بررسی سریع سرویس‌ها.</p>
         </div>
 
-        {err ? <div style={{ padding: "0 26px 18px 26px" }}><div className="notice error">{err}</div></div> : null}
+        {err ? (
+          <div style={{ padding: "0 26px 18px 26px" }}>
+            <div className="notice error">{err}</div>
+          </div>
+        ) : null}
 
         <div className="kv">
           <div className="k">کاربر</div>
@@ -80,5 +90,4 @@ export default function AppHome() {
     </main>
   );
 }
-
 
