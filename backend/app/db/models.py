@@ -15,3 +15,6 @@ from app.models.referral import Referral  # noqa: F401
 from app.models.campaign import Campaign  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
+from app.models.arbitration import Arbitration  # noqa: F401
+from app.models.tenant_score_event import TenantScoreEvent  # noqa: F401
+

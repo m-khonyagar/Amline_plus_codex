@@ -13,6 +13,7 @@ from app.models.contract import Contract
 from app.models.payment import Payment, PaymentStatus
 from app.models.user import User
 from app.schemas.payment import PaymentCreate, PaymentOut
+from app.services.tenant_score import apply_tenant_score_delta
 from app.services.wallet_ledger import apply_delta, lock_wallet
 
 router = APIRouter()
@@ -69,6 +70,9 @@ def pay_rent(
     db.flush()
 
     apply_delta(db, user_id=user.id, delta=-req.amount, type="rent_payment", reference_id=str(p.id))
+
+    # Phase 3: naive tenant score increment on successful payment
+    apply_tenant_score_delta(db, user=user, delta=1, reason="payment_completed", reference_id=str(p.id))
 
     db.commit()
     db.refresh(p)
