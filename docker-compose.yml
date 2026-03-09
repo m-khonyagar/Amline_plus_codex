@@ -5,15 +5,11 @@ services:
       POSTGRES_USER: amline
       POSTGRES_PASSWORD: amline
       POSTGRES_DB: amline
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
 
   minio:
     image: minio/minio:RELEASE.2025-01-20T14-49-07Z
@@ -22,8 +18,8 @@ services:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio12345
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${AMLINE_MINIO_PORT:-9000}:9000"
+      - "${AMLINE_MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
 
@@ -42,7 +38,7 @@ services:
       AMLINE_S3_BUCKET: amline-docs
       AMLINE_S3_REGION: us-east-1
     ports:
-      - "8000:8000"
+      - "${AMLINE_API_PORT:-8000}:8000"
     depends_on:
       - postgres
       - redis
@@ -51,3 +47,4 @@ services:
 volumes:
   postgres_data:
   minio_data:
+
