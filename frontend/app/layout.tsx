@@ -11,9 +11,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Some browser extensions inject nodes into <body> before hydration and can trigger
+  // React hydration edge-cases. This suppresses harmless mismatch warnings.
   return (
-    <html lang="fa" dir="rtl" className={`${sans.variable} ${mono.variable}`}>
-      <body style={{ fontFamily: "var(--font-sans), system-ui" }}>{children}</body>
+    <html lang="fa" dir="rtl" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+      <body style={{ fontFamily: "var(--font-sans), system-ui" }} suppressHydrationWarning>
+        <div id="amline-root">{children}</div>
+      </body>
     </html>
   );
 }
