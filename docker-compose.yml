@@ -44,7 +44,19 @@ services:
       - redis
       - minio
 
-volumes:
-  postgres_data:
+  worker:
+    build:
+      context: ./backend
+    environment:
+      AMLINE_ENV: dev
+      AMLINE_DATABASE_URL: postgresql+psycopg://amline:amline@postgres:5432/amline
+      AMLINE_REDIS_URL: redis://redis:6379/0
+      AMLINE_JWT_SECRET: dev-secret-change-me
+      AMLINE_JWT_ISSUER: amline
+    depends_on:
+      - postgres
+      - redis
+    command: ["sh", "-lc", "python -m app.workers.notification_worker"]\nvolumes:\n  postgres_data:
   minio_data:
+
 
