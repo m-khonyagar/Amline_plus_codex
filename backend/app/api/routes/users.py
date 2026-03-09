@@ -7,7 +7,7 @@ from app.api.deps import get_current_user
 from app.core.ids import parse_uuid
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserMe, UserUpdate
+from app.schemas.user import UserLookupOut, UserMe, UserUpdate
 
 router = APIRouter()
 
@@ -61,3 +61,16 @@ def get_user(user_id: str, _: User = Depends(get_current_user), db: Session = De
     if not u:
         raise HTTPException(status_code=404, detail="user_not_found")
     return _to_me(u)
+@router.get("/lookup", response_model=UserLookupOut)
+def lookup_by_mobile(mobile: str, _: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    m = (mobile or "").strip()
+    # MVP-safe validation: expect Iranian mobile like 09XXXXXXXXX
+    if len(m) != 11 or (not m.isdigit()) or (not m.startswith("09")):
+        raise HTTPException(status_code=422, detail="invalid_mobile")
+
+    u = db.query(User).filter(User.mobile == m).one_or_none()
+    if not u:
+        raise HTTPException(status_code=404, detail="user_not_found")
+
+    return UserLookupOut(id=str(u.id), mobile=u.mobile, name=u.name)
+

@@ -19,3 +19,10 @@ class UserMe(BaseModel):
 class UserUpdate(BaseModel):
     national_code: str | None = None
     name: str | None = None
+
+class UserLookupOut(BaseModel):
+    id: str
+    mobile: str
+    name: str | None = None
+
+
