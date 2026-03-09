@@ -35,6 +35,22 @@ function money(v: number) {
   return `${new Intl.NumberFormat("fa-IR").format(rounded)} تومان`;
 }
 
+function fmt(ts?: string | null) {
+  if (!ts) return "-";
+  try {
+    return new Date(ts).toLocaleString("fa-IR");
+  } catch {
+    return ts;
+  }
+}
+
+function statusClass(status: string) {
+  if (status === "active" || status === "signed") return "chip chipOk";
+  if (status === "draft") return "chip chipWarn";
+  if (status === "terminated" || status === "expired") return "chip chipBad";
+  return "chip";
+}
+
 export default function ContractsPage() {
   const [items, setItems] = useState<ContractOut[]>([]);
   const [props, setProps] = useState<PropertyOut[]>([]);
@@ -98,8 +114,8 @@ export default function ContractsPage() {
     try {
       const pid = propertyId.trim();
       const tid = tenantId.trim();
-      if (!pid) throw new Error("property_id خالی است");
-      if (!tid) throw new Error("tenant_id خالی است (ابتدا مستاجر را پیدا کنید)");
+      if (!pid) throw new Error("ابتدا یک ملک انتخاب کنید.");
+      if (!tid) throw new Error("ابتدا مستاجر را با موبایل پیدا کنید.");
 
       const c = await apiFetch<ContractOut>("/contracts", {
         method: "POST",
@@ -122,120 +138,133 @@ export default function ContractsPage() {
   }
 
   return (
-    <main className="container" style={{ padding: "40px 0" }}>
-      <div className="card">
-        <div className="header">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">قراردادها</h1>
-            <div className="row">
-              <a className="btn" href="/app">
-                داشبورد
-              </a>
-              <a className="btn" href="/app/properties">
-                املاک
-              </a>
-              <button className="btn" onClick={load} disabled={busy}>
-                بازخوانی
+    <div className="page">
+      <div className="pageHeader">
+        <div>
+          <h1 className="pageTitle">قراردادها</h1>
+          <p className="pageSub">ساخت قرارداد با انتخاب ملک از لیست و جستجوی مستاجر با موبایل.</p>
+        </div>
+        <div className="row">
+          <a className="btn" href="/app/properties">
+            ثبت ملک
+          </a>
+          <button className="btn" onClick={load} disabled={busy}>
+            بازخوانی
+          </button>
+        </div>
+      </div>
+
+      {err ? <div className="notice error">{err}</div> : null}
+
+      <div className="grid" style={{ gridTemplateColumns: "1.15fr 0.85fr" }}>
+        <section className="panel">
+          <div className="panelBody">
+            <div className="badge">ایجاد قرارداد</div>
+
+            <div className="field" style={{ marginTop: 12 }}>
+              <div className="label">انتخاب ملک</div>
+              <select className="input" value={propertyId} onChange={(e) => setPropertyId(e.target.value)} disabled={busy}>
+                {props.length === 0 ? <option value="">(ابتدا ملک ثبت کنید)</option> : null}
+                {props.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.city} | {p.property_type} | {p.rooms} اتاق | {p.area} متر | {p.address}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="field" style={{ marginTop: 10 }}>
+              <div className="label">مستاجر (موبایل)</div>
+              <div className="row">
+                <input
+                  className="input"
+                  value={tenantMobile}
+                  onChange={(e) => setTenantMobile(e.target.value)}
+                  placeholder="مثلا 09123456789"
+                  inputMode="tel"
+                  disabled={busy}
+                />
+                <button className="btn" onClick={lookupTenant} disabled={busy || tenantMobile.trim().length < 11}>
+                  جستجو
+                </button>
+              </div>
+              <div className="pageSub" style={{ marginTop: 8 }}>
+                {tenant ? `یافت شد: ${tenant.name || "-"} (${tenant.mobile})` : "اگر کاربر پیدا نشد، ابتدا باید با همان شماره وارد سیستم شود."}
+              </div>
+            </div>
+
+            <div className="grid" style={{ marginTop: 12 }}>
+              <div>
+                <div className="field">
+                  <div className="label">نوع قرارداد</div>
+                  <input className="input" value={contractType} onChange={(e) => setContractType(e.target.value)} disabled={busy} />
+                </div>
+                <div className="field" style={{ marginTop: 10 }}>
+                  <div className="label">ودیعه</div>
+                  <input className="input" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} disabled={busy} />
+                </div>
+              </div>
+              <div>
+                <div className="field">
+                  <div className="label">اجاره ماهانه</div>
+                  <input className="input" value={rentAmount} onChange={(e) => setRentAmount(e.target.value)} disabled={busy} />
+                </div>
+                <div className="field" style={{ marginTop: 10 }}>
+                  <div className="label">شروع / پایان (YYYY-MM-DD)</div>
+                  <div className="row">
+                    <input className="input" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
+                    <input className="input" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={busy} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
+              <button className="btn btnPrimary" onClick={create} disabled={busy || !tenantId}>
+                {busy ? "..." : "ایجاد قرارداد"}
               </button>
             </div>
           </div>
-          <p className="subtitle">ایجاد قرارداد بدون copy/paste شناسه‌ها: انتخاب ملک از لیست و پیدا کردن مستاجر با موبایل.</p>
-        </div>
+        </section>
 
-        {err ? (
-          <div style={{ padding: "0 26px 18px 26px" }}>
-            <div className="notice error">{err}</div>
-          </div>
-        ) : null}
-
-        <div style={{ padding: "0 26px 26px 26px" }}>
-          <div className="grid">
-            <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">ایجاد قرارداد</div>
-
-              <div className="field" style={{ marginTop: 12 }}>
-                <div className="label">ملک</div>
-                <select className="input" value={propertyId} onChange={(e) => setPropertyId(e.target.value)} disabled={busy}>
-                  {props.length === 0 ? <option value="">(ابتدا ملک ثبت کنید)</option> : null}
-                  {props.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.city} | {p.property_type} | {p.rooms} اتاق | {p.area} متر | {p.address}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="field" style={{ marginTop: 10 }}>
-                <div className="label">موبایل مستاجر</div>
-                <div className="row">
-                  <input
-                    className="input"
-                    value={tenantMobile}
-                    onChange={(e) => setTenantMobile(e.target.value)}
-                    placeholder="مثلا 09123456789"
-                    inputMode="tel"
-                    disabled={busy}
-                  />
-                  <button className="btn" onClick={lookupTenant} disabled={busy || tenantMobile.trim().length < 10}>
-                    پیدا کردن
-                  </button>
-                </div>
-                <div className="subtitle" style={{ marginTop: 8 }}>
-                  {tenant ? `یافت شد: ${tenant.name || "-"} (${tenant.mobile})` : tenantId ? `tenant_id: ${tenantId}` : ""}
-                </div>
-              </div>
-
-              <div className="grid" style={{ marginTop: 12 }}>
-                <div>
-                  <div className="field">
-                    <div className="label">نوع قرارداد</div>
-                    <input className="input" value={contractType} onChange={(e) => setContractType(e.target.value)} disabled={busy} />
-                  </div>
-                  <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">ودیعه (تومان)</div>
-                    <input className="input" value={depositAmount} onChange={(e) => setDepositAmount(e.target.value)} disabled={busy} />
-                  </div>
-                </div>
-                <div>
-                  <div className="field">
-                    <div className="label">اجاره (تومان)</div>
-                    <input className="input" value={rentAmount} onChange={(e) => setRentAmount(e.target.value)} disabled={busy} />
-                  </div>
-                  <div className="field" style={{ marginTop: 10 }}>
-                    <div className="label">شروع / پایان (YYYY-MM-DD)</div>
-                    <div className="row">
-                      <input className="input" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={busy} />
-                      <input className="input" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={busy} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
-                <button className="btn btnPrimary" onClick={create} disabled={busy}>
-                  {busy ? "..." : "ایجاد"}
-                </button>
-              </div>
-            </section>
-
-            <section className="card" style={{ padding: 14, boxShadow: "none" }}>
+        <section className="panel">
+          <div className="panelBody">
+            <div className="row" style={{ justifyContent: "space-between" }}>
               <div className="badge">آخرین قراردادها</div>
-              {recent.length === 0 ? (
-                <div className="subtitle" style={{ marginTop: 10 }}>
-                  خالی
-                </div>
-              ) : (
-                recent.map((c) => (
-                  <a key={c.id} href={`/app/contracts/${c.id}`} className="kv">
-                    <div className="k">{c.status} | {c.tracking_code}</div>
-                    <div className="v">اجاره: {money(c.rent_amount)} | ودیعه: {money(c.deposit_amount)}</div>
-                  </a>
-                ))
-              )}
-            </section>
+              <span className="chip">{recent.length} مورد</span>
+            </div>
+
+            {recent.length === 0 ? (
+              <p className="pageSub" style={{ marginTop: 10 }}>هنوز قراردادی ندارید.</p>
+            ) : (
+              <table className="table" style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>کد رهگیری</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.map((c) => (
+                    <tr key={c.id}>
+                      <td><a href={`/app/contracts/${c.id}`}>{c.tracking_code}</a></td>
+                      <td><span className={statusClass(c.status)}>{c.status}</span></td>
+                      <td>{fmt(c.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {recent.length > 0 ? (
+              <div className="pageSub" style={{ marginTop: 10 }}>
+                اجاره و ودیعه را در صفحه جزئیات قرارداد می‌توانید امضا و PDF تولید کنید.
+              </div>
+            ) : null}
           </div>
-        </div>
+        </section>
       </div>
-    </main>
+    </div>
   );
 }

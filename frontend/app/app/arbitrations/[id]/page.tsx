@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, getTokens } from "../../../lib/api";
 
 type ArbitrationOut = {
@@ -22,16 +22,12 @@ type ArbitrationSummaryOut = {
   status: string;
   reason: string;
   created_at: string;
-
   contract_id: string;
   contract_tracking_code?: string | null;
-
   claimant_id: string;
   claimant_mobile?: string | null;
-
   respondent_id: string;
   respondent_mobile?: string | null;
-
   property_id?: string | null;
   property_city?: string | null;
 };
@@ -69,6 +65,13 @@ function kb(n: number) {
   return Math.max(1, Math.round(n / 1024));
 }
 
+function statusClass(status: string) {
+  if (status === "under_review") return "chip chipWarn";
+  if (status === "resolved") return "chip chipOk";
+  if (status === "rejected") return "chip chipBad";
+  return "chip";
+}
+
 export default function ArbitrationDetail({ params }: { params: { id: string } }) {
   const id = params.id;
 
@@ -86,6 +89,9 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const closed = arb?.status === "resolved" || arb?.status === "rejected";
+  const canWrite = !closed;
+
+  const lastMsg = useMemo(() => (msgs.length ? msgs[msgs.length - 1] : null), [msgs]);
 
   async function load() {
     setErr(null);
@@ -190,145 +196,148 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
   }
 
   return (
-    <main className="container" style={{ padding: "40px 0" }}>
-      <div className="card">
-        <div className="header">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">پرونده داوری</h1>
-            <div className="row">
-              <a className="btn" href="/app/arbitrations">
-                بازگشت به لیست
-              </a>
-              <button className="btn" onClick={load} disabled={busy}>
-                بازخوانی
-              </button>
-            </div>
-          </div>
-          <p className="subtitle">جزئیات پرونده، پیام‌ها و پیوست‌ها.</p>
+    <div className="page">
+      <div className="pageHeader">
+        <div>
+          <h1 className="pageTitle">جزئیات داوری</h1>
+          <p className="pageSub">پرونده، پیام‌ها، پیوست‌ها و تغییر وضعیت.</p>
         </div>
-
-        {err ? (
-          <div style={{ padding: "0 26px 18px 26px" }}>
-            <div className="notice error">{err}</div>
-          </div>
-        ) : null}
-
-        <div className="kv">
-          <div className="k">کد رهگیری قرارداد</div>
-          <div className="v">{summary?.contract_tracking_code || "-"}</div>
-        </div>
-        <div className="kv">
-          <div className="k">شهر</div>
-          <div className="v">{summary?.property_city || "-"}</div>
-        </div>
-        <div className="kv">
-          <div className="k">موبایل شاکی</div>
-          <div className="v">{summary?.claimant_mobile || "-"}</div>
-        </div>
-        <div className="kv">
-          <div className="k">موبایل طرف مقابل</div>
-          <div className="v">{summary?.respondent_mobile || "-"}</div>
-        </div>
-
-        <div className="kv">
-          <div className="k">وضعیت</div>
-          <div className="v">{arb?.status || "..."}</div>
-        </div>
-        <div className="kv">
-          <div className="k">موضوع</div>
-          <div className="v">{arb?.reason || "..."}</div>
-        </div>
-        <div className="kv">
-          <div className="k">تاریخ ایجاد</div>
-          <div className="v">{fmt(arb?.created_at)}</div>
-        </div>
-        <div className="kv">
-          <div className="k">شناسه پرونده</div>
-          <div className="v">{arb?.id || "..."}</div>
-        </div>
-
-        <div style={{ padding: "0 26px 26px 26px" }}>
-          <div className="grid">
-            <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">پیام‌ها</div>
-              <div className="row" style={{ marginTop: 10 }}>
-                <input
-                  className="input"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  placeholder={closed ? "پرونده بسته است" : "پیام جدید..."}
-                  disabled={busy || closed}
-                />
-                <button className="btn btnPrimary" onClick={postMessage} disabled={busy || closed}>
-                  ارسال
-                </button>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                {msgs.length === 0 ? (
-                  <div className="subtitle">خالی</div>
-                ) : (
-                  msgs.slice(-30).map((m) => (
-                    <div key={m.id} className="kv">
-                      <div className="k">{m.author_id.slice(0, 8)} | {fmt(m.created_at)}</div>
-                      <div className="v">{m.body}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <aside className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">پیوست‌ها</div>
-              <div className="row" style={{ marginTop: 10 }}>
-                <input ref={fileRef} className="input" type="file" disabled={busy || closed} />
-                <button className="btn" onClick={upload} disabled={busy || closed}>
-                  آپلود
-                </button>
-              </div>
-              <div style={{ marginTop: 10 }}>
-                {atts.length === 0 ? (
-                  <div className="subtitle">خالی</div>
-                ) : (
-                  atts.slice(0, 30).map((a) => (
-                    <div key={a.id} className="kv">
-                      <div className="k">{kb(a.size_bytes)} KB</div>
-                      <div className="v">
-                        <div style={{ display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
-                          <span>{a.filename}</span>
-                          <button className="btn" onClick={() => download(a)} disabled={busy}>
-                            دانلود
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div style={{ marginTop: 16 }}>
-                <div className="badge">تغییر وضعیت (فقط staff)</div>
-                <div className="field" style={{ marginTop: 10 }}>
-                  <div className="label">وضعیت جدید</div>
-                  <select className="input" value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy}>
-                    <option value="under_review">در حال بررسی</option>
-                    <option value="resolved">مختومه</option>
-                    <option value="rejected">رد شده</option>
-                  </select>
-                </div>
-                <div className="field" style={{ marginTop: 10 }}>
-                  <div className="label">شرح نتیجه (اختیاری)</div>
-                  <input className="input" value={resolution} onChange={(e) => setResolution(e.target.value)} disabled={busy} />
-                </div>
-                <div className="row" style={{ marginTop: 10, justifyContent: "flex-end" }}>
-                  <button className="btn" onClick={changeStatus} disabled={busy}>
-                    اعمال
-                  </button>
-                </div>
-              </div>
-            </aside>
-          </div>
+        <div className="row">
+          <a className="btn" href="/app/arbitrations">بازگشت</a>
+          <button className="btn" onClick={load} disabled={busy}>بازخوانی</button>
+          <span className={arb ? statusClass(arb.status) : "chip"}>{arb?.status || "..."}</span>
         </div>
       </div>
-    </main>
+
+      {err ? <div className="notice error">{err}</div> : null}
+
+      <section className="panel">
+        <div className="panelBody">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div>
+              <div className="badge">پرونده</div>
+              <div style={{ marginTop: 10, fontSize: 16, fontWeight: 900 }}>
+                {summary?.contract_tracking_code || arb?.id || "..."}
+              </div>
+              <div className="pageSub" style={{ marginTop: 6 }}>
+                {summary?.property_city ? `شهر: ${summary.property_city}` : ""}
+              </div>
+            </div>
+            <div style={{ textAlign: "left" }}>
+              <div className="badge">طرفین</div>
+              <div className="pageSub" style={{ marginTop: 10 }}>
+                شاکی: {summary?.claimant_mobile || "-"}
+              </div>
+              <div className="pageSub" style={{ marginTop: 6 }}>
+                طرف مقابل: {summary?.respondent_mobile || "-"}
+              </div>
+            </div>
+          </div>
+
+          <table className="table" style={{ marginTop: 14 }}>
+            <thead>
+              <tr>
+                <th>موضوع</th>
+                <th>تاریخ ایجاد</th>
+                <th>آخرین پیام</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{arb?.reason || "..."}</td>
+                <td>{fmt(arb?.created_at)}</td>
+                <td>{lastMsg ? fmt(lastMsg.created_at) : "-"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="grid" style={{ gridTemplateColumns: "1.1fr 0.9fr" }}>
+        <section className="panel">
+          <div className="panelBody">
+            <div className="badge">پیام‌ها</div>
+            <div className="row" style={{ marginTop: 12 }}>
+              <input className="input" value={body} onChange={(e) => setBody(e.target.value)} placeholder={canWrite ? "پیام جدید..." : "پرونده بسته است"} disabled={busy || !canWrite} />
+              <button className="btn btnPrimary" onClick={postMessage} disabled={busy || !canWrite}>ارسال</button>
+            </div>
+
+            {msgs.length === 0 ? (
+              <p className="pageSub" style={{ marginTop: 10 }}>پیامی ثبت نشده.</p>
+            ) : (
+              <table className="table" style={{ marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th>زمان</th>
+                    <th>متن</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {msgs.slice(-20).map((m) => (
+                    <tr key={m.id}>
+                      <td>{fmt(m.created_at)}</td>
+                      <td>{m.body}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="panelBody">
+            <div className="badge">پیوست‌ها</div>
+
+            <div className="row" style={{ marginTop: 12 }}>
+              <input ref={fileRef} className="input" type="file" disabled={busy || !canWrite} />
+              <button className="btn" onClick={upload} disabled={busy || !canWrite}>آپلود</button>
+            </div>
+
+            {atts.length === 0 ? (
+              <p className="pageSub" style={{ marginTop: 10 }}>پیوستی وجود ندارد.</p>
+            ) : (
+              <table className="table" style={{ marginTop: 12 }}>
+                <thead>
+                  <tr>
+                    <th>فایل</th>
+                    <th>حجم</th>
+                    <th>دانلود</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {atts.slice(0, 12).map((a) => (
+                    <tr key={a.id}>
+                      <td>{a.filename}</td>
+                      <td>{kb(a.size_bytes)} KB</td>
+                      <td><button className="btn" onClick={() => download(a)} disabled={busy}>دانلود</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            <div style={{ marginTop: 16 }}>
+              <div className="badge">تغییر وضعیت (فقط staff)</div>
+              <div className="field" style={{ marginTop: 12 }}>
+                <div className="label">وضعیت جدید</div>
+                <select className="input" value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} disabled={busy}>
+                  <option value="under_review">در حال بررسی</option>
+                  <option value="resolved">مختومه</option>
+                  <option value="rejected">رد شده</option>
+                </select>
+              </div>
+              <div className="field" style={{ marginTop: 10 }}>
+                <div className="label">شرح نتیجه (اختیاری)</div>
+                <input className="input" value={resolution} onChange={(e) => setResolution(e.target.value)} disabled={busy} />
+              </div>
+              <div className="row" style={{ marginTop: 12, justifyContent: "flex-end" }}>
+                <button className="btn btnPrimary" onClick={changeStatus} disabled={busy}>اعمال</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

@@ -20,6 +20,15 @@ type DlqEntry = {
   ts_ms?: number | null;
 };
 
+function fmt(ts?: string | null) {
+  if (!ts) return "-";
+  try {
+    return new Date(ts).toLocaleString("fa-IR");
+  } catch {
+    return ts;
+  }
+}
+
 export default function NotificationsPage() {
   const [items, setItems] = useState<NotificationOut[]>([]);
   const [dlq, setDlq] = useState<DlqEntry[]>([]);
@@ -72,68 +81,90 @@ export default function NotificationsPage() {
   }
 
   return (
-    <main className="container" style={{ padding: "40px 0" }}>
-      <div className="card">
-        <div className="header">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">اعلان‌ها</h1>
-            <div className="row">
-              <a className="btn" href="/app">
-                داشبورد
-              </a>
-              <button className="btn btnPrimary" onClick={enqueue} disabled={busy}>
-                {busy ? "..." : "ارسال تست (dev)"}
-              </button>
-              <button className="btn" onClick={replayAllDlq} disabled={busy}>
-                بازپخش DLQ
-              </button>
-            </div>
-          </div>
-          <p className="subtitle">لیست اعلان‌ها و صف خطا (DLQ) برای محیط توسعه.</p>
+    <div className="page">
+      <div className="pageHeader">
+        <div>
+          <h1 className="pageTitle">اعلان‌ها</h1>
+          <p className="pageSub">مشاهده اعلان‌ها و مدیریت DLQ برای محیط توسعه.</p>
         </div>
-
-        {err ? (
-          <div style={{ padding: "0 26px 18px 26px" }}>
-            <div className="notice error">{err}</div>
-          </div>
-        ) : null}
-
-        <div style={{ padding: "0 26px 26px 26px" }}>
-          <div className="grid">
-            <section className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">آخرین اعلان‌ها</div>
-              {items.length === 0 ? (
-                <div className="subtitle" style={{ marginTop: 10 }}>
-                  خالی
-                </div>
-              ) : (
-                items.slice(0, 12).map((n) => (
-                  <div key={n.id} className="kv">
-                    <div className="k">{n.type}</div>
-                    <div className="v">{n.status} | {n.channel}</div>
-                  </div>
-                ))
-              )}
-            </section>
-
-            <aside className="card" style={{ padding: 14, boxShadow: "none" }}>
-              <div className="badge">صف خطا (DLQ)</div>
-              {dlq.length === 0 ? (
-                <div className="subtitle" style={{ marginTop: 10 }}>
-                  خالی
-                </div>
-              ) : (
-                dlq.slice(0, 12).map((d) => (
-                  <div key={d.id} className="kv">
-                    <div className="k">تلاش {d.attempt}</div>
-                    <div className="v">{d.reason || "-"}</div>
-                  </div>
-                ))
-              )}
-            </aside>
-          </div>
+        <div className="row">
+          <button className="btn btnPrimary" onClick={enqueue} disabled={busy}>
+            ارسال تست
+          </button>
+          <button className="btn" onClick={replayAllDlq} disabled={busy}>
+            بازپخش DLQ
+          </button>
+          <button className="btn" onClick={load} disabled={busy}>
+            بازخوانی
+          </button>
         </div>
       </div>
-    </main>
+
+      {err ? <div className="notice error">{err}</div> : null}
+
+      <div className="grid" style={{ gridTemplateColumns: "1.1fr 0.9fr" }}>
+        <section className="panel">
+          <div className="panelBody">
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <div className="badge">آخرین اعلان‌ها</div>
+              <span className="chip">{items.slice(0, 12).length} مورد</span>
+            </div>
+            {items.length === 0 ? (
+              <p className="pageSub" style={{ marginTop: 10 }}>خالی</p>
+            ) : (
+              <table className="table" style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>نوع</th>
+                    <th>کانال</th>
+                    <th>وضعیت</th>
+                    <th>زمان</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.slice(0, 12).map((n) => (
+                    <tr key={n.id}>
+                      <td>{n.type}</td>
+                      <td>{n.channel}</td>
+                      <td><span className="chip">{n.status}</span></td>
+                      <td>{fmt(n.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        <section className="panel">
+          <div className="panelBody">
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <div className="badge">صف خطا (DLQ)</div>
+              <span className="chip">{dlq.slice(0, 12).length} مورد</span>
+            </div>
+            {dlq.length === 0 ? (
+              <p className="pageSub" style={{ marginTop: 10 }}>خالی</p>
+            ) : (
+              <table className="table" style={{ marginTop: 10 }}>
+                <thead>
+                  <tr>
+                    <th>تلاش</th>
+                    <th>دلیل</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dlq.slice(0, 12).map((d) => (
+                    <tr key={d.id}>
+                      <td><span className="chip chipWarn">{d.attempt}</span></td>
+                      <td>{d.reason || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

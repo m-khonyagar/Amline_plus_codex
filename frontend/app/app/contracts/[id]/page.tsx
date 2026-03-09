@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "../../../lib/api";
 
 type ContractOut = {
@@ -39,6 +39,18 @@ function fmt(ts?: string | null) {
   }
 }
 
+function money(v: number) {
+  const rounded = Math.round(v);
+  return `${new Intl.NumberFormat("fa-IR").format(rounded)} تومان`;
+}
+
+function statusClass(status: string) {
+  if (status === "active" || status === "signed") return "chip chipOk";
+  if (status === "draft") return "chip chipWarn";
+  if (status === "terminated" || status === "expired") return "chip chipBad";
+  return "chip";
+}
+
 export default function ContractDetail({ params }: { params: { id: string } }) {
   const id = params.id;
 
@@ -46,6 +58,8 @@ export default function ContractDetail({ params }: { params: { id: string } }) {
   const [docs, setDocs] = useState<DocumentOut[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const latest = useMemo(() => (docs.length > 0 ? docs[0] : null), [docs]);
 
   async function load() {
     setErr(null);
@@ -123,86 +137,117 @@ export default function ContractDetail({ params }: { params: { id: string } }) {
   }
 
   return (
-    <main className="container" style={{ padding: "40px 0" }}>
-      <div className="card">
-        <div className="header">
+    <div className="page">
+      <div className="pageHeader">
+        <div>
+          <h1 className="pageTitle">جزئیات قرارداد</h1>
+          <p className="pageSub">امضا، تولید سند و دانلود PDF.</p>
+        </div>
+        <div className="row">
+          <a className="btn" href="/app/contracts">
+            بازگشت
+          </a>
+          <button className="btn" onClick={load} disabled={busy}>
+            بازخوانی
+          </button>
+          <button className="btn" onClick={sign} disabled={busy}>
+            امضا
+          </button>
+          <button className="btn btnPrimary" onClick={generate} disabled={busy}>
+            تولید PDF
+          </button>
+          {latest ? (
+            <button className="btn" onClick={() => openPdf(latest)} disabled={busy}>
+              دانلود آخرین PDF
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {err ? <div className="notice error">{err}</div> : null}
+
+      <section className="panel">
+        <div className="panelBody">
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">قرارداد</h1>
-            <div className="row">
-              <a className="btn" href="/app/contracts">
-                بازگشت
-              </a>
-              <button className="btn" onClick={load} disabled={busy}>
-                بازخوانی
-              </button>
-              <button className="btn" onClick={sign} disabled={busy}>
-                امضا
-              </button>
-              <button className="btn btnPrimary" onClick={generate} disabled={busy}>
-                تولید PDF
-              </button>
+            <div>
+              <div className="badge">مشخصات</div>
+              <div style={{ marginTop: 10, fontSize: 16, fontWeight: 900 }}>
+                {c ? c.tracking_code : "..."}
+              </div>
+              <div className="pageSub" style={{ marginTop: 6 }}>
+                {c ? `از ${c.start_date} تا ${c.end_date}` : ""}
+              </div>
+            </div>
+            <div className={c ? statusClass(c.status) : "chip"}>
+              {c?.status || "..."}
             </div>
           </div>
-          <p className="subtitle">امضا و تولید سند قرارداد (HTML/PDF).</p>
-        </div>
 
-        {err ? (
-          <div style={{ padding: "0 26px 18px 26px" }}>
-            <div className="notice error">{err}</div>
+          <table className="table" style={{ marginTop: 14 }}>
+            <thead>
+              <tr>
+                <th>اجاره</th>
+                <th>ودیعه</th>
+                <th>property_id</th>
+                <th>تاریخ ایجاد</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{c ? money(c.rent_amount) : "..."}</td>
+                <td>{c ? money(c.deposit_amount) : "..."}</td>
+                <td style={{ fontFamily: "var(--font-mono)" }}>{c?.property_id || "..."}</td>
+                <td>{fmt(c?.created_at)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="pageSub" style={{ marginTop: 10 }}>
+            نکته: هر طرف قرارداد باید یک بار دکمه «امضا» را بزند تا وضعیت قرارداد به signed تغییر کند.
           </div>
-        ) : null}
+        </div>
+      </section>
 
-        <div className="kv">
-          <div className="k">کد رهگیری</div>
-          <div className="v">{c?.tracking_code || "..."}</div>
-        </div>
-        <div className="kv">
-          <div className="k">وضعیت</div>
-          <div className="v">{c?.status || "..."}</div>
-        </div>
-        <div className="kv">
-          <div className="k">اجاره / ودیعه</div>
-          <div className="v">{c ? `${c.rent_amount} / ${c.deposit_amount}` : "..."}</div>
-        </div>
-        <div className="kv">
-          <div className="k">مدت</div>
-          <div className="v">{c ? `${c.start_date} تا ${c.end_date}` : "..."}</div>
-        </div>
-        <div className="kv">
-          <div className="k">property_id</div>
-          <div className="v">{c?.property_id || "..."}</div>
-        </div>
-
-        <div style={{ padding: "0 26px 26px 26px" }}>
-          <section className="card" style={{ padding: 14, boxShadow: "none" }}>
+      <section className="panel">
+        <div className="panelBody">
+          <div className="row" style={{ justifyContent: "space-between" }}>
             <div className="badge">سندها</div>
-            {docs.length === 0 ? (
-              <div className="subtitle" style={{ marginTop: 10 }}>
-                هنوز سندی تولید نشده.
-              </div>
-            ) : (
-              docs.slice(0, 10).map((d) => (
-                <div key={d.id} className="kv">
-                  <div className="k">{fmt(d.created_at)}</div>
-                  <div className="v">
-                    <div className="row" style={{ justifyContent: "space-between" }}>
-                      <span>{d.id}</span>
-                      <span className="row">
+            <span className="chip">{docs.length} نسخه</span>
+          </div>
+
+          {docs.length === 0 ? (
+            <p className="pageSub" style={{ marginTop: 10 }}>هنوز سندی تولید نشده. از دکمه «تولید PDF» استفاده کنید.</p>
+          ) : (
+            <table className="table" style={{ marginTop: 10 }}>
+              <thead>
+                <tr>
+                  <th>زمان تولید</th>
+                  <th>شناسه</th>
+                  <th>دانلود</th>
+                </tr>
+              </thead>
+              <tbody>
+                {docs.slice(0, 10).map((d) => (
+                  <tr key={d.id}>
+                    <td>{fmt(d.created_at)}</td>
+                    <td style={{ fontFamily: "var(--font-mono)" }}>{d.id}</td>
+                    <td>
+                      <div className="row">
                         <button className="btn" onClick={() => openHtml(d)} disabled={busy}>
                           HTML
                         </button>
                         <button className="btn btnPrimary" onClick={() => openPdf(d)} disabled={busy}>
                           PDF
                         </button>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </section>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }

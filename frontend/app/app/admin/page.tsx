@@ -52,55 +52,78 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="container" style={{ padding: "40px 0" }}>
-      <div className="card">
-        <div className="header">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <h1 className="title">ادمین</h1>
-            <div className="row">
-              <a className="btn" href="/app">
-                داشبورد
-              </a>
-              <a className="btn" href="/app/notifications">
-                اعلان‌ها
-              </a>
-              <button className="btn" onClick={replayAll} disabled={busy}>
-                بازپخش DLQ
-              </button>
-            </div>
-          </div>
-          <p className="subtitle">
-            این صفحه نیاز به نقش Admin/Moderator دارد. برای محیط توسعه می‌توانید `AMLINE_BOOTSTRAP_ADMIN_MOBILE` را در compose تنظیم کنید.
-          </p>
+    <div className="page">
+      <div className="pageHeader">
+        <div>
+          <h1 className="pageTitle">ادمین</h1>
+          <p className="pageSub">دسترسی ادمین/ناظر و مدیریت DLQ (Production آماده نیست).</p>
         </div>
-
-        {err ? (
-          <div style={{ padding: "0 26px 18px 26px" }}>
-            <div className="notice error">{err}</div>
-          </div>
-        ) : null}
-
-        <div className="kv">
-          <div className="k">حساب فعلی</div>
-          <div className="v">{me ? `${me.mobile} (${me.role})` : "..."}</div>
-        </div>
-
-        <div style={{ padding: "0 26px 26px 26px" }}>
-          <div className="badge">صف خطا (DLQ)</div>
-          {dlq.length === 0 ? (
-            <div className="subtitle" style={{ marginTop: 10 }}>
-              خالی
-            </div>
-          ) : (
-            dlq.slice(0, 25).map((d) => (
-              <div key={d.id} className="kv">
-                <div className="k">تلاش {d.attempt}</div>
-                <div className="v">{d.notification_id} | {d.reason || "-"}</div>
-              </div>
-            ))
-          )}
+        <div className="row">
+          <a className="btn" href="/app/notifications">
+            اعلان‌ها
+          </a>
+          <button className="btn" onClick={replayAll} disabled={busy}>
+            بازپخش DLQ
+          </button>
+          <button className="btn" onClick={load} disabled={busy}>
+            بازخوانی
+          </button>
         </div>
       </div>
-    </main>
+
+      {err ? <div className="notice error">{err}</div> : null}
+
+      <section className="panel">
+        <div className="panelBody">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div>
+              <div className="badge">حساب</div>
+              <div style={{ marginTop: 10, fontSize: 16, fontWeight: 900 }}>
+                {me ? `${me.mobile} (${me.role})` : "..."}
+              </div>
+            </div>
+            <span className={me?.role === "Admin" || me?.role === "Moderator" ? "chip chipOk" : "chip chipBad"}>
+              {me?.role || "..."}
+            </span>
+          </div>
+
+          <div className="pageSub" style={{ marginTop: 10 }}>
+            برای محیط توسعه می‌توانید `AMLINE_BOOTSTRAP_ADMIN_MOBILE` را در compose تنظیم کنید.
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="panelBody">
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <div className="badge">صف خطا (DLQ)</div>
+            <span className="chip">{dlq.length} مورد</span>
+          </div>
+
+          {dlq.length === 0 ? (
+            <p className="pageSub" style={{ marginTop: 10 }}>خالی</p>
+          ) : (
+            <table className="table" style={{ marginTop: 10 }}>
+              <thead>
+                <tr>
+                  <th>تلاش</th>
+                  <th>شناسه</th>
+                  <th>دلیل</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dlq.slice(0, 25).map((d) => (
+                  <tr key={d.id}>
+                    <td><span className="chip chipWarn">{d.attempt}</span></td>
+                    <td style={{ fontFamily: "var(--font-mono)" }}>{d.notification_id}</td>
+                    <td>{d.reason || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
