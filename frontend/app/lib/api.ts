@@ -1,6 +1,6 @@
 export function apiBaseUrl(): string {
-  // Browser-safe: default to localhost.
-  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:18000";
+  // Default: use Next.js route handler proxy at /api
+  return process.env.NEXT_PUBLIC_API_PROXY_BASE_URL || "";
 }
 
 type Tokens = {
@@ -33,7 +33,7 @@ async function refreshToken(): Promise<string | null> {
   const t = getTokens();
   if (!t) return null;
 
-  const r = await fetch(`${apiBaseUrl()}/auth/refresh-token`, {
+  const r = await fetch(`${apiBaseUrl()}/api/auth/refresh-token`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: t.refresh_token })
@@ -46,7 +46,7 @@ async function refreshToken(): Promise<string | null> {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${apiBaseUrl()}${path}`;
+  const url = `${apiBaseUrl()}/api${path}`;
   const tokens = getTokens();
 
   const headers = new Headers(init?.headers || undefined);
@@ -60,7 +60,6 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     return (await r1.json()) as T;
   }
 
-  // Try refresh once.
   const newAccess = await refreshToken();
   if (!newAccess) {
     clearTokens();

@@ -63,8 +63,8 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        NEXT_PUBLIC_API_BASE_URL: "http://localhost:${AMLINE_API_PORT:-8000}"
+    environment:
+      AMLINE_API_INTERNAL_URL: http://backend:8000
     ports:
       - "${AMLINE_WEB_PORT:-3000}:3000"
     depends_on:

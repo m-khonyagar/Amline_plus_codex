@@ -29,3 +29,10 @@ set AMLINE_MINIO_PORT=19000
 set AMLINE_MINIO_CONSOLE_PORT=19101
 docker compose up --build
 ```
+## Frontend proxy
+
+The Next.js frontend calls the backend through a server-side proxy at `/api/*`.
+
+- In Docker, the frontend uses `AMLINE_API_INTERNAL_URL=http://backend:8000`.
+- In the browser, requests go to the frontend origin (no CORS headaches).
+
