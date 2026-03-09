@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -12,6 +13,7 @@ from app.models.contract import Contract
 from app.models.payment import Payment, PaymentStatus
 from app.models.user import User
 from app.schemas.payment import PaymentCreate, PaymentOut
+from app.services.wallet_ledger import apply_delta, lock_wallet
 
 router = APIRouter()
 
@@ -34,6 +36,9 @@ def pay_rent(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if req.amount <= 0:
+        raise HTTPException(status_code=422, detail="invalid_amount")
+
     try:
         cid = parse_uuid(req.contract_id)
     except ValueError:
@@ -47,7 +52,11 @@ def pay_rent(
     if user.id not in {c.owner_id, c.tenant_id}:
         raise HTTPException(status_code=403, detail="forbidden")
 
-    # TODO: integrate real payment gateway; for now we mark completed.
+    # MVP: pay from wallet. Lock wallet row to prevent race conditions.
+    w = lock_wallet(db, user_id=user.id)
+    if Decimal(w.balance or 0) < Decimal(str(req.amount)):
+        raise HTTPException(status_code=400, detail="insufficient_wallet_balance")
+
     p = Payment(
         contract_id=c.id,
         payer_id=user.id,
@@ -57,6 +66,10 @@ def pay_rent(
         paid_at=dt.datetime.now(dt.timezone.utc),
     )
     db.add(p)
+    db.flush()
+
+    apply_delta(db, user_id=user.id, delta=-req.amount, type="rent_payment", reference_id=str(p.id))
+
     db.commit()
     db.refresh(p)
     return _to_out(p)
@@ -64,7 +77,12 @@ def pay_rent(
 
 @router.get("/history", response_model=list[PaymentOut])
 def history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    items = db.query(Payment).filter(Payment.payer_id == user.id).order_by(Payment.paid_at.desc().nullslast()).all()
+    items = (
+        db.query(Payment)
+        .filter(Payment.payer_id == user.id)
+        .order_by(Payment.paid_at.desc().nullslast())
+        .all()
+    )
     return [_to_out(p) for p in items]
 
 

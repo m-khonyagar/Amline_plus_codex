@@ -19,5 +19,9 @@ class WalletTxnOut(BaseModel):
     created_at: dt.datetime
 
 
+class DepositRequest(BaseModel):
+    amount: float
+
+
 class WithdrawRequest(BaseModel):
     amount: float
