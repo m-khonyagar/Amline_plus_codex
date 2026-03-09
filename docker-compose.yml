@@ -56,8 +56,18 @@ services:
     depends_on:
       - postgres
       - redis
-    command: ["sh", "-lc", "python -m app.workers.notification_worker"]\nvolumes:\n  postgres_data:
+    command: ["sh", "-lc", "python -m app.workers.notification_worker"]
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://localhost:${AMLINE_API_PORT:-8000}"
+    ports:
+      - "${AMLINE_WEB_PORT:-3000}:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
   minio_data:
-
-
-
