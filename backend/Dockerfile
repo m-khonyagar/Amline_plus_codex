@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 # wkhtmltopdf for PDF generation
 RUN apt-get update \
@@ -18,5 +18,6 @@ COPY alembic /app/alembic
 ENV PYTHONUNBUFFERED=1
 
 CMD ["sh", "-lc", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+
 
 
