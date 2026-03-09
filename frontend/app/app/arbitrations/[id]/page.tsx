@@ -17,6 +17,25 @@ type ArbitrationOut = {
   resolution?: string | null;
 };
 
+type ArbitrationSummaryOut = {
+  id: string;
+  status: string;
+  reason: string;
+  created_at: string;
+
+  contract_id: string;
+  contract_tracking_code?: string | null;
+
+  claimant_id: string;
+  claimant_mobile?: string | null;
+
+  respondent_id: string;
+  respondent_mobile?: string | null;
+
+  property_id?: string | null;
+  property_city?: string | null;
+};
+
 type MessageOut = {
   id: string;
   arbitration_id: string;
@@ -50,6 +69,7 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
   const id = params.id;
 
   const [arb, setArb] = useState<ArbitrationOut | null>(null);
+  const [summary, setSummary] = useState<ArbitrationSummaryOut | null>(null);
   const [msgs, setMsgs] = useState<MessageOut[]>([]);
   const [atts, setAtts] = useState<AttachmentOut[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -66,12 +86,17 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
   async function load() {
     setErr(null);
     try {
-      const a = await apiFetch<ArbitrationOut>(`/arbitrations/${id}`);
+      const [a, m, at, s] = await Promise.all([
+        apiFetch<ArbitrationOut>(`/arbitrations/${id}`),
+        apiFetch<MessageOut[]>(`/arbitrations/${id}/messages`),
+        apiFetch<AttachmentOut[]>(`/arbitrations/${id}/attachments`),
+        apiFetch<ArbitrationSummaryOut>(`/arbitrations/${id}/summary`).catch(() => null)
+      ]);
+
       setArb(a);
-      const m = await apiFetch<MessageOut[]>(`/arbitrations/${id}/messages`);
       setMsgs(m);
-      const at = await apiFetch<AttachmentOut[]>(`/arbitrations/${id}/attachments`);
       setAtts(at);
+      setSummary(s);
     } catch (e: any) {
       setErr(e?.message || "خطا");
     }
@@ -187,6 +212,23 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
         ) : null}
 
         <div className="kv">
+          <div className="k">tracking_code</div>
+          <div className="v">{summary?.contract_tracking_code || "-"}</div>
+        </div>
+        <div className="kv">
+          <div className="k">property_city</div>
+          <div className="v">{summary?.property_city || "-"}</div>
+        </div>
+        <div className="kv">
+          <div className="k">claimant_mobile</div>
+          <div className="v">{summary?.claimant_mobile || "-"}</div>
+        </div>
+        <div className="kv">
+          <div className="k">respondent_mobile</div>
+          <div className="v">{summary?.respondent_mobile || "-"}</div>
+        </div>
+
+        <div className="kv">
           <div className="k">status</div>
           <div className="v">{arb?.status || "..."}</div>
         </div>
@@ -225,7 +267,9 @@ export default function ArbitrationDetail({ params }: { params: { id: string } }
                 ) : (
                   msgs.slice(-30).map((m) => (
                     <div key={m.id} className="kv">
-                      <div className="k">{m.author_id.slice(0, 8)} | {fmt(m.created_at)}</div>
+                      <div className="k">
+                        {m.author_id.slice(0, 8)} | {fmt(m.created_at)}
+                      </div>
                       <div className="v">{m.body}</div>
                     </div>
                   ))
