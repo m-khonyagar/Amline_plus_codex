@@ -24,5 +24,13 @@ class Settings(BaseSettings):
 
     otp_ttl_seconds: int = 120
 
+    # Notification worker settings
+    notification_max_attempts: int = 5
+    notification_retry_base_seconds: int = 5
+    notification_retry_max_seconds: int = 300
+    notification_stuck_ms: int = 60000
+
 
 settings = Settings()
+
+
