@@ -47,7 +47,7 @@ export default function AppHome() {
             <div className="row">
               <a className="btn" href="/app/notifications">
                 Notifications
-              </a>
+              </a>\n              <a className="btn" href="/app/arbitrations">Arbitrations</a>
               <button
                 className="btn"
                 onClick={() => {
@@ -80,4 +80,5 @@ export default function AppHome() {
     </main>
   );
 }
+
 
