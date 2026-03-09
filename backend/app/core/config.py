@@ -30,7 +30,8 @@ class Settings(BaseSettings):
     notification_retry_max_seconds: int = 300
     notification_stuck_ms: int = 60000
 
+    # Dev convenience: if set, this mobile becomes Admin on login.
+    bootstrap_admin_mobile: str | None = None
+
 
 settings = Settings()
-
-

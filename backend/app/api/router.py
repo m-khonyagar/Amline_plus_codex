@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.routes import (
+    admin,
     auth,
     campaigns,
     contracts,
@@ -27,3 +28,5 @@ api_router.include_router(referrals.router, prefix="/referrals", tags=["referral
 api_router.include_router(campaigns.router, prefix="/campaigns", tags=["campaigns"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(documents.router, prefix="/documents", tags=["documents"])
+
+api_router.include_router(admin.router, prefix="/admin", tags=["admin"])

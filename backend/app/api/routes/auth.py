@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import decode_token
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.auth import (
     RefreshTokenRequest,
     SendOtpRequest,
@@ -48,6 +48,11 @@ def verify(req: VerifyOtpRequest, db: Session = Depends(get_db)):
     # Bootstrap user infra (wallet, referral code)
     ensure_user_wallet(db, user.id)
     ensure_referral_code(db, user)
+
+    # Dev-only convenience: bootstrap an Admin user.
+    if settings.bootstrap_admin_mobile and req.mobile == settings.bootstrap_admin_mobile:
+        user.role = UserRole.admin
+
     db.commit()
 
     pair = auth_tokens.issue_tokens(str(user.id))
@@ -77,3 +82,4 @@ def refresh(req: RefreshTokenRequest):
     auth_tokens.rotate_refresh(refresh_jti=refresh_jti)
     pair = auth_tokens.issue_tokens(user_id)
     return TokenResponse(access_token=pair.access_token, refresh_token=pair.refresh_token)
+
