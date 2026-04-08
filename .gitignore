@@ -2,9 +2,19 @@
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
 
 # Env
 .env
+.env.local
+backend/.env
+frontend/.env.local
 
 # Build
 backend/var/
